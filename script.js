@@ -113,18 +113,22 @@ app.use(
 
 app.use(bodyParser.json({ limit: "1mb" }));
 
+
 app.use(
   session({
-    name: SESSION_COOKIE_NAME,
-    secret: SESSION_SECRET,
+    name: 'SHIELD_CARE_SESSION', // Bạn có thể giữ tên cũ hoặc đổi như này
+    secret: 'shieldcare-bao-hiem-mo-to-session-2026', 
     resave: false,
     saveUninitialized: false,
+    proxy: true, // THÊM DÒNG NÀY (Bắt buộc cho Render)
     cookie: {
-      ...getSessionCookieOptions(),
+      secure: true,    // PHẢI LÀ true (Vì Render dùng HTTPS)
+      sameSite: 'none', // PHẢI LÀ 'none' (Để Vercel gửi được cookie)
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
+//-----------------------------
 
 function requireAuth(req, res, next) {
   if (req.session && req.session.isAdmin) {

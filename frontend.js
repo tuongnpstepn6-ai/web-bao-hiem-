@@ -4,8 +4,16 @@
 (function () {
   "use strict";
 
-  const API_URL =
-    typeof getApiBaseUrl === "function" ? getApiBaseUrl() : "";
+  function getApiUrl() {
+    const h = window.location.hostname;
+    if (h === "localhost" || h === "127.0.0.1" ) {
+      
+      return "";
+    }
+    return "https://web-bao-hiem-emow.onrender.com";
+  }
+
+  const API_URL = getApiUrl();
   const PHONE_REGEX = /^(0|\+84)[0-9]{8,11}$/;
 
   const SUCCESS_MSG =
@@ -230,8 +238,7 @@
           }
         })
         .catch(function () {
-          const msg =
-            "Không kết nối được máy chủ. Kiểm tra backend (npm start hoặc URL Render trong api-config).";
+          const msg = "Không kết nối được máy chủ. Hãy chạy: npm start";
           if (apiErrorEl) {
             apiErrorEl.textContent = msg;
             apiErrorEl.hidden = false;

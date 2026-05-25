@@ -7,7 +7,7 @@
   function getApiUrl() {
     const h = window.location.hostname;
     if (h === "localhost" || h === "127.0.0.1" ) {
-      
+
       return "";
     }
     return "https://web-bao-hiem-emow.onrender.com";
@@ -210,6 +210,7 @@
 
       fetch(API_URL + "/customer-request", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload),
       })

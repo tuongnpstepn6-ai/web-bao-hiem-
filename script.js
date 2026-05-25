@@ -13,12 +13,9 @@ const db = require("./database");
 const { validateCustomerBody, validateCustomerRequest } = require("./validators");
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-
-if (IS_PRODUCTION) {
-  app.set("trust proxy", 1);
-}
 const SESSION_COOKIE_NAME = "connect.sid";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "baohiem@mo";
@@ -26,7 +23,10 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123456";
 const SESSION_SECRET =
   process.env.SESSION_SECRET || "shieldcare-bao-hiem-mo-to-session-2026";
 
-const VERCEL_ORIGIN_PATTERN = /^https:\/\/[\w.-]+\.vercel\.app$/;
+const VERCEL_ORIGIN_PATTERN = /^https:\/\/[\w.-]+\.vercel\.app$/i;
+/** Render: cookie cross-site (Vercel → Render) bắt buộc SameSite=None + Secure */
+const COOKIE_CROSS_SITE =
+  process.env.COOKIE_CROSS_SITE === "true" || IS_PRODUCTION;
 
 let httpServer = null;
 let isShuttingDown = false;
@@ -42,12 +42,24 @@ function isOriginAllowed(origin) {
   return extra.includes(origin);
 }
 
+/** CORS: trả về đúng chuỗi origin (bắt buộc khi credentials: true) */
+function resolveCorsOrigin(origin, callback) {
+  if (!origin) {
+    return callback(null, true);
+  }
+  if (isOriginAllowed(origin)) {
+    return callback(null, origin);
+  }
+  console.warn("[CORS] Từ chối origin:", origin);
+  return callback(null, false);
+}
+
 function getSessionCookieOptions() {
   return {
     path: "/",
     httpOnly: true,
-    sameSite: IS_PRODUCTION ? "none" : "lax",
-    secure: IS_PRODUCTION,
+    sameSite: COOKIE_CROSS_SITE ? "none" : "lax",
+    secure: COOKIE_CROSS_SITE,
   };
 }
 
@@ -92,14 +104,10 @@ function handleLogout(req, res) {
 
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin || isOriginAllowed(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
-    },
+    origin: resolveCorsOrigin,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Accept"],
   })
 );
 
@@ -150,7 +158,13 @@ app.post("/login", (req, res) => {
 
   if (adminUser === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
     req.session.isAdmin = true;
-    return res.json({ success: true, message: "Đăng nhập thành công." });
+    return req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error("[login] session.save:", saveErr);
+        return res.status(500).json({ success: false, error: "Không lưu được phiên đăng nhập." });
+      }
+      return res.json({ success: true, message: "Đăng nhập thành công." });
+    });
   }
 
   return res.status(401).json({ success: false, error: "Admin hoặc mật khẩu không đúng." });

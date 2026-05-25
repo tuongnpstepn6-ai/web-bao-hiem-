@@ -19,7 +19,8 @@
   let editingCustomerId = null;
   let searchCustomersTimer = null;
   let searchRequestsTimer = null;
-  let apiAbortController = null;
+  /** Chỉ hủy khi logout — không hủy request song song (tránh nhảy về login) */
+  let pendingControllers = [];
   const API_TIMEOUT_MS = 20000;
 
   function escapeHtml(str) {
@@ -52,35 +53,38 @@
     clearTimeout(searchRequestsTimer);
     searchCustomersTimer = null;
     searchRequestsTimer = null;
-    if (apiAbortController) {
-      apiAbortController.abort();
-      apiAbortController = null;
-    }
+    pendingControllers.forEach(function (c) {
+      c.abort();
+    });
+    pendingControllers = [];
+  }
+
+  function removeController(controller) {
+    pendingControllers = pendingControllers.filter(function (c) {
+      return c !== controller;
+    });
   }
 
   async function apiFetch(url, options) {
-    if (apiAbortController) {
-      apiAbortController.abort();
-    }
-    apiAbortController = new AbortController();
-    const signal = apiAbortController.signal;
+    const opts = Object.assign({}, options || {});
+    const controller = new AbortController();
+    pendingControllers.push(controller);
     const timeoutId = setTimeout(function () {
-      apiAbortController.abort();
+      controller.abort();
     }, API_TIMEOUT_MS);
 
     let res;
     try {
-      res = await fetch(
-        API_BASE + url,
-        Object.assign(
-          {
-            credentials: "include",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            signal: signal,
-          },
-          options || {}
-        )
-      );
+      res = await fetch(API_BASE + url, {
+        method: opts.method || "GET",
+        credentials: "include",
+        headers: Object.assign(
+          { "Content-Type": "application/json", Accept: "application/json" },
+          opts.headers || {}
+        ),
+        body: opts.body,
+        signal: controller.signal,
+      });
     } catch (err) {
       if (err && err.name === "AbortError") {
         return {
@@ -94,9 +98,7 @@
       };
     } finally {
       clearTimeout(timeoutId);
-      if (apiAbortController && apiAbortController.signal === signal) {
-        apiAbortController = null;
-      }
+      removeController(controller);
     }
 
     let data = {};

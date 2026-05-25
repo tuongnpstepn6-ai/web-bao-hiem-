@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="api-base" content="https://web-bao-hiem.onrender.com" />
+    <title>Quản trị | ShieldCare Bảo hiểm xe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body class="admin-body">
+    <div class="admin-loading" id="admin-loading" aria-hidden="true">
+      <div class="admin-loading__spinner"></div>
+      <p>Đang tải...</p>
+    </div>
+    <div class="admin-toast" id="admin-toast" role="status" aria-live="polite" hidden></div>
+
+    <!-- Đăng nhập -->
+    <section class="admin-login" id="login-screen" hidden>
+      <div class="admin-login__card">
+        <div class="admin-login__brand">
+          <i class="fa-solid fa-car-side" aria-hidden="true"></i>
+          <h1>Quản trị ShieldCare</h1>
+          <p>Bảo hiểm xe mô tô &amp; ô tô</p>
+        </div>
+        <form id="login-form" novalidate>
+          <div class="admin-field">
+            <label for="login-admin">Admin</label>
+            <input type="text" id="login-admin" name="admin" autocomplete="username" required />
+            <span class="admin-field__error" id="error-login-admin"></span>
+          </div>
+          <div class="admin-field">
+            <label for="login-password">Mật khẩu</label>
+            <input type="password" id="login-password" name="password" autocomplete="current-password" required />
+            <span class="admin-field__error" id="error-login-password"></span>
+          </div>
+          <button type="submit" class="btn btn--primary btn--block">Đăng nhập</button>
+        </form>
+        <a href="index.html" class="admin-back-link">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Về trang chủ
+        </a>
+      </div>
+    </section>
+
+    <!-- App sau đăng nhập -->
+    <div class="admin-app admin-layout" id="dashboard-screen" hidden>
+      <button type="button" class="admin-sidebar-toggle" id="sidebar-toggle" aria-label="Mở menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <aside class="admin-sidebar" id="admin-sidebar">
+        <div class="admin-sidebar__brand">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>ShieldCare Admin</span>
+        </div>
+        <nav class="admin-nav" aria-label="Menu quản trị">
+          <button type="button" class="admin-nav__item is-active" data-view="dashboard">
+            <i class="fa-solid fa-gauge-high"></i> Dashboard
+          </button>
+          <button type="button" class="admin-nav__item" data-view="customers">
+            <i class="fa-solid fa-users"></i> Khách hàng bảo hiểm
+          </button>
+          <button type="button" class="admin-nav__item" data-view="requests">
+            <i class="fa-solid fa-inbox"></i> Yêu cầu mới
+            <span class="admin-nav__badge" id="badge-requests" hidden>0</span>
+          </button>
+          <button type="button" class="admin-nav__item" data-view="expiring">
+            <i class="fa-solid fa-triangle-exclamation"></i> Sắp hết hạn
+            <span class="admin-nav__badge admin-nav__badge--warn" id="badge-expiring" hidden>0</span>
+          </button>
+          <button type="button" class="admin-nav__item admin-nav__item--logout" id="btn-logout">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        </nav>
+        <a href="index.html" class="admin-sidebar__home">Trang chủ website</a>
+      </aside>
+
+      <div class="admin-content">
+        <!-- A. Dashboard tổng quan -->
+        <section class="admin-panel is-active" id="panel-dashboard" data-panel="dashboard">
+          <header class="admin-panel__header">
+            <h1>Dashboard</h1>
+            <p>Tổng quan hai hệ thống: khách hàng bảo hiểm &amp; yêu cầu từ website</p>
+          </header>
+          <div class="admin-stats admin-stats--dash">
+            <div class="admin-stat-card">
+              <span class="admin-stat-card__label">Khách đang quản lý</span>
+              <strong class="admin-stat-card__value" id="dash-customers-total">0</strong>
+            </div>
+            <div class="admin-stat-card admin-stat-card--orange">
+              <span class="admin-stat-card__label">Sắp hết hạn (≤7 ngày)</span>
+              <strong class="admin-stat-card__value" id="dash-expiring">0</strong>
+            </div>
+            <div class="admin-stat-card admin-stat-card--red">
+              <span class="admin-stat-card__label">Đã hết hạn</span>
+              <strong class="admin-stat-card__value" id="dash-expired">0</strong>
+            </div>
+            <div class="admin-stat-card admin-stat-card--highlight">
+              <span class="admin-stat-card__label">Yêu cầu mới (website)</span>
+              <strong class="admin-stat-card__value" id="dash-requests-new">0</strong>
+            </div>
+          </div>
+          <div class="admin-dash-actions">
+            <button type="button" class="btn btn--primary" data-goto="customers">Quản lý khách hàng</button>
+            <button type="button" class="btn btn--outline" data-goto="requests">Xem yêu cầu mới</button>
+            <button type="button" class="btn btn--outline" data-goto="expiring">Danh sách sắp hết hạn</button>
+          </div>
+        </section>
+
+        <!-- B. Khách hàng bảo hiểm (bảng customers) -->
+        <section class="admin-panel" id="panel-customers" data-panel="customers" hidden>
+          <header class="admin-panel__header">
+            <h1>Khách hàng bảo hiểm</h1>
+            <p>Quản lý hợp đồng đang theo dõi — nhắc tái tục, ngày hết hạn</p>
+          </header>
+
+          <div class="admin-card">
+            <h2 class="admin-card__title" id="customer-form-title">Thêm khách hàng</h2>
+            <form id="customer-form" class="admin-form-grid" novalidate>
+              <input type="hidden" id="customer-id" value="" />
+              <div class="admin-field">
+                <label for="c-tenKhachHang">Tên khách hàng</label>
+                <input type="text" id="c-tenKhachHang" required />
+                <span class="admin-field__error" id="error-c-tenKhachHang"></span>
+              </div>
+              <div class="admin-field">
+                <label for="c-bienSo">Biển số</label>
+                <input type="text" id="c-bienSo" placeholder="68L-555.77" required />
+                <span class="admin-field__error" id="error-c-bienSo"></span>
+              </div>
+              <div class="admin-field">
+                <label for="c-ngayHieuLuc">Ngày hiệu lực</label>
+                <input type="date" id="c-ngayHieuLuc" required />
+                <span class="admin-field__error" id="error-c-ngayHieuLuc"></span>
+              </div>
+              <div class="admin-field">
+                <label for="c-ngayHetHan">Ngày hết hạn</label>
+                <input type="date" id="c-ngayHetHan" required />
+                <span class="admin-field__error" id="error-c-ngayHetHan"></span>
+              </div>
+              <div class="admin-field admin-field--full">
+                <label for="c-soDienThoai">Số điện thoại</label>
+                <input type="tel" id="c-soDienThoai" placeholder="0901234567" required />
+                <span class="admin-field__error" id="error-c-soDienThoai"></span>
+              </div>
+              <div class="admin-form-actions admin-field--full">
+                <button type="submit" class="btn btn--primary" id="customer-submit">Lưu</button>
+                <button type="button" class="btn btn--outline" id="customer-cancel" hidden>Hủy sửa</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-toolbar">
+              <div class="admin-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="search" id="customers-search" placeholder="Tìm tên hoặc biển số..." />
+              </div>
+              <div class="admin-filters" id="customers-filters">
+                <button type="button" class="admin-filter is-active" data-filter="all">Tất cả</button>
+                <button type="button" class="admin-filter" data-filter="con_hieu_luc">Còn hiệu lực</button>
+                <button type="button" class="admin-filter" data-filter="sap_het_han">Sắp hết hạn</button>
+                <button type="button" class="admin-filter" data-filter="het_han">Đã hết hạn</button>
+              </div>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Tên KH</th>
+                    <th>Biển số</th>
+                    <th>Hiệu lực</th>
+                    <th>Hết hạn</th>
+                    <th>SĐT</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="customers-tbody">
+                  <tr><td colspan="7" class="admin-table__empty">Chưa có dữ liệu</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- C. Yêu cầu mới (bảng customer_requests) -->
+        <section class="admin-panel" id="panel-requests" data-panel="requests" hidden>
+          <header class="admin-panel__header">
+            <h1>Yêu cầu khách hàng mới</h1>
+            <p>Khách gửi từ website — <strong>khác</strong> với khách hàng bảo hiểm đang quản lý</p>
+          </header>
+          <div class="admin-card">
+            <div class="admin-toolbar">
+              <div class="admin-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="search" id="requests-search" placeholder="Tìm tên, biển số, SĐT..." />
+              </div>
+              <div class="admin-filters" id="requests-filters">
+                <button type="button" class="admin-filter is-active" data-status="all">Tất cả</button>
+                <button type="button" class="admin-filter" data-status="Yêu cầu mới">Yêu cầu mới</button>
+              </div>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Tên khách hàng</th>
+                    <th>Số điện thoại</th>
+                    <th>Biển số xe</th>
+                    <th>Ngày giờ gửi</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="requests-tbody">
+                  <tr><td colspan="6" class="admin-table__empty">Chưa có yêu cầu</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- D. Sắp hết hạn (chỉ đọc từ customers, lọc sap_het_han) -->
+        <section class="admin-panel" id="panel-expiring" data-panel="expiring" hidden>
+          <header class="admin-panel__header">
+            <h1>Sắp hết hạn trong 7 ngày</h1>
+            <p>Danh sách từ bảng <strong>customers</strong> — cần liên hệ nhắc tái tục</p>
+          </header>
+          <div class="admin-alert admin-alert--warn">
+            <i class="fa-solid fa-bell"></i>
+            Các hợp đồng dưới đây sẽ hết hạn trong vòng 7 ngày tới.
+          </div>
+          <div class="admin-card">
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Tên KH</th>
+                    <th>Biển số</th>
+                    <th>Hết hạn</th>
+                    <th>SĐT</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="expiring-tbody">
+                  <tr><td colspan="6" class="admin-table__empty">Không có hợp đồng sắp hết hạn</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="api-config.js"></script>
+    <script src="admin.js" defer></script>
+  </body>
+</html>
